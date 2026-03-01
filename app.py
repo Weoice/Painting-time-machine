@@ -184,6 +184,7 @@ def get_colors_from_img(img, k=12):
     pixels = np.array(img).reshape(-1, 3)
     kmeans = KMeans(n_clusters=k, n_init=25, random_state=42)
     kmeans.fit(pixels)
+    
     colors = kmeans.cluster_centers_.astype(int)
     labels = kmeans.labels_
     counts = np.bincount(labels)
@@ -204,17 +205,21 @@ def get_features(colors, counts, img):
     hsv = img.convert('HSV')
     hsv_arr = np.array(hsv)
     feats.append(np.mean(hsv_arr[:,:,0]))
+    
     feats.append(np.std(hsv_arr[:,:,0]))
     feats.append(np.mean(hsv_arr[:,:,1]))
     feats.append(np.std(hsv_arr[:,:,1]))
     feats.append(np.mean(hsv_arr[:,:,2]))
     feats.append(np.std(hsv_arr[:,:,2]))
+    
     feats.append(skew(hsv_arr[:,:,1].flatten()))
     feats.append(kurtosis(hsv_arr[:,:,1].flatten()))
     
     feats.append(np.mean(colors))
     feats.append(np.std(colors))
     feats.append(np.mean(colors[:, 0]) - np.mean(colors[:, 2]))
+
+    
     feats.append(np.mean(colors[:, 1]) - np.mean(colors[:, 2]))
     feats.append(np.mean(colors[:, 0]) - np.mean(colors[:, 1]))
     feats.append(np.mean(np.std(colors, axis=1)))
@@ -242,7 +247,6 @@ def get_features(colors, counts, img):
     feats.append(np.percentile(edges, 90))
     feats.append(np.percentile(edges, 10))
     feats.append(skew(edges.flatten()))
-    
     feats.append(np.max(gray) - np.min(gray))
     feats.append(np.std(gray))
     feats.append(np.mean(np.abs(np.diff(gray, axis=0))))
@@ -250,7 +254,6 @@ def get_features(colors, counts, img):
     feats.append(np.var(gray))
     feats.append(skew(gray.flatten()))
     feats.append(kurtosis(gray.flatten()))
-    
     lap = ndimage.laplace(gray)
     feats.append(np.mean(np.abs(lap)))
     feats.append(np.std(lap))
@@ -267,6 +270,7 @@ def get_features(colors, counts, img):
     
     feats.append(props[0])
     feats.append(props[1] if len(props) > 1 else 0)
+    
     feats.append(props[2] if len(props) > 2 else 0)
     feats.append(np.sum(props[:3]))
     feats.append(np.sum(props[:5]))
@@ -294,7 +298,6 @@ def get_features(colors, counts, img):
     feats.append(np.sum(lum > 170) / lum.size)
     
     return feats
-
 def get_era(year):
     if year < 1600: return "Renaissance"
     elif year < 1700: return "Baroque"
@@ -311,7 +314,6 @@ def load_model():
 
 model, scaler, stats = load_model()
 margin = int(stats['mae'])
-
 st.markdown('''
 <div class="main-header">
     <h1 style="text-align: center; margin: 0; font-size: 3.8rem;">Painting Time Machine</h1>
@@ -395,11 +397,9 @@ if uploaded:
                 feats_scaled = [feats]
             
             year = int(model.predict(feats_scaled)[0])
-            
             feat_var = np.std(feats)
             col_var = np.std([colors[i][j] for i in range(len(colors)) for j in range(3)])
             edge_str = feats[40]
-            
             conf = max(45, min(96, 100 - (margin / 2.2)))
             if feat_var < 20: conf *= 0.85
             if col_var < 30: conf *= 0.9
@@ -408,7 +408,6 @@ if uploaded:
             
             preds.append(year)
             confs.append(conf)
-            
             prog.text("2nd Analysis...")
             arr = np.array(img)
             img2 = Image.fromarray(np.clip(arr * 1.2, 0, 255).astype(np.uint8))
@@ -592,4 +591,5 @@ st.markdown(f'''
     <p style="margin: 0;">Trained with paintings from The Metropolitan Museum of Art</p>
     <p style="margin: 8px 0 0 0;">Accuracy: ±{margin} years</p>
 </div>
+
 ''', unsafe_allow_html=True)
